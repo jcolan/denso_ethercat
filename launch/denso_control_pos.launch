@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+
+  <arg name="control_args" default="-i enp2s0 -m 0" />
+  <arg name="name" default="/" />
+  <arg name="nrobot" default="dual" />
+
+
+  <!-- GDB functionality -->
+  <arg name="debug" default="false" />
+  <arg name="eth" default="enp2s0" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+  <node name="main" pkg="denso_ethercat"
+        type="main" args="$(arg control_args)"
+        respawn="false" output="screen" launch-prefix="$(arg launch_prefix)">
+  </node>
+
+  <rosparam file="$(find denso_ethercat)/config/pos_control.yaml" command="load" if="$(eval nrobot == 'single')"/>
+  <rosparam file="$(find denso_ethercat)/config/pos_control_dual.yaml" command="load" if="$(eval nrobot == 'dual')"/>
+
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen"
+    args="
+      --shutdown-timeout 0.1
+      $(arg name)joint_state_controller
+      $(arg name)position_controller
+    "/>
+
+</launch>
